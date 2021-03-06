@@ -1,0 +1,109 @@
+static_resources:
+  listeners:
+  - address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 80
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: backend
+              domains: ["api.insightops.in"]
+              routes:
+              - match: { prefix: "/v1/" }
+                route:
+                  prefix_rewrite: '/'
+                  cluster: v1_cluster
+            - name: ra
+              domains: ["admin.insightops.in"]
+              routes:
+              - match: { prefix: "" }
+                route:
+                  cluster: ra_cluster
+            - name: sa
+              domains: ["sa.insightops.in"]
+              routes:
+              - match: { prefix: "" }
+                route:
+                  cluster: sa_cluster
+            - name: pos
+              domains: ["pos.insightops.in"]
+              routes:
+              - match: { prefix: "" }
+                route:
+                  cluster: pos_cluster
+          http_filters:
+          - name: envoy.filters.http.router
+
+  clusters:
+    - name: v1_cluster
+      connect_timeout: 1s
+      type: static
+      lb_policy: round_robin
+      load_assignment:
+        cluster_name: v1_cluster
+        endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: 127.0.0.1
+                  port_value: 4000
+          - endpoint:
+              address:
+                socket_address:
+                  address: 127.0.0.1
+                  port_value: 3000
+          - endpoint:
+              address:
+                socket_address:
+                  address: 127.0.0.1
+                  port_value: 2000
+
+    - name: ra_cluster
+      connect_timeout: 1s
+      type: static
+      lb_policy: round_robin
+      load_assignment:
+        cluster_name: ra_cluster
+        endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: 127.0.0.1
+                  port_value: 8000
+
+    - name: sa_cluster
+      connect_timeout: 1s
+      type: static
+      lb_policy: round_robin
+      load_assignment:
+        cluster_name: sa_cluster
+        endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: 127.0.0.1
+                  port_value: 8001
+
+    - name: pos_cluster
+      connect_timeout: 1s
+      type: static
+      lb_policy: round_robin
+      load_assignment:
+        cluster_name: pos_cluster
+        endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: 127.0.0.1
+                  port_value: 8002
